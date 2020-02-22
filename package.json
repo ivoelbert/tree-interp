@@ -4,7 +4,7 @@
     "main": "dist/index.js",
     "license": "MIT",
     "author": "ivoelbert",
-    "repository": "https://github.com/ivoelbert/infinits",
+    "repository": "https://github.com/ivoelbert/tree-interp",
     "scripts": {
         "build": "tsc -p .",
         "watch": "yarn build -- -w",
@@ -13,9 +13,9 @@
         "start": "node dist/index.js"
     },
     "devDependencies": {
-        "@types/jest": "^24.0.20",
-        "jest": "^24.9.0",
-        "ts-jest": "^24.1.0",
-        "typescript": "^3.7.2"
+        "@types/jest": "^25.1.3",
+        "jest": "^25.1.0",
+        "ts-jest": "^25.2.1",
+        "typescript": "^3.7.5"
     }
 }
