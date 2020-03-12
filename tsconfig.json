@@ -8,7 +8,10 @@
         "baseUrl": "types",
         "types": ["jest"],
         "typeRoots": ["types", "./node_modules/@types"],
-        "declaration": true
+        "declaration": true,
+        "alwaysStrict": true,
+        "noImplicitAny": true,
+        "strict": true,
     },
     "include": ["src/**/*.ts"],
 }

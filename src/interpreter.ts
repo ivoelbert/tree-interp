@@ -1,16 +1,45 @@
-import { Fragments, Exp, Temp } from './tree';
+import { Exp, Temp, Frag, FunFrag, StringFrag, Label } from './treeTypes';
+import {
+    isFunFrag,
+    isStringFrag,
+    findFunction,
+    labelFromName,
+} from './treeHelpers';
+import { NotImplementedError } from './utils';
 
-const TEMPS: Map<Temp, number> = new Map();
-const MEM: Map<number, number> = new Map();
+export class TreeInterpreter {
+    private funFrags: FunFrag[];
+    private stringFrags: StringFrag[];
 
-const evalExp = (exp: Exp): number => {
-    return undefined;
-};
+    // Map Temps to values
+    private temps: Map<Temp, number>;
 
-const evalFunction = (name: string, args: number[]): number => {
-    return undefined;
-};
+    // Map memory location to values
+    private mem: Map<number, number>;
 
-export const interp = (fragments: Fragments): number => {
-    return evalFunction('_tigermain', []);
-};
+    constructor(fragments: Frag[]) {
+        this.temps = new Map();
+        this.mem = new Map();
+
+        this.funFrags = fragments.filter(isFunFrag);
+        this.stringFrags = fragments.filter(isStringFrag);
+    }
+
+    public run = (): number => {
+        // A program starts by calling the function _tigermain
+        const mainLabel = labelFromName('_tigermain');
+        return this.evalFunction(mainLabel, []);
+    };
+
+    private evalFunction = (name: Label, args: number[]): number => {
+        // Find the function and extract it's body and frame.
+        const fragment = findFunction(this.funFrags, name);
+        const { body, frame } = fragment.Proc;
+
+        throw new NotImplementedError();
+    };
+
+    private evalExp = (exp: Exp): number => {
+        throw new NotImplementedError();
+    };
+}
