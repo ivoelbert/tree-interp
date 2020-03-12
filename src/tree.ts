@@ -3,6 +3,11 @@ export type Label = {
     offset: number;
 };
 
+// Two Labels are equal if their representation is deeply equal
+export const eqLabel = (l1: Label, l2: Label): boolean => {
+    return l1.offset === l2.offset && l1.prefix === l2.prefix
+}
+
 export type LocalTemp = {
     prefix: number;
     offset: number;
