@@ -10,14 +10,15 @@ export type LocalTemp = {
 
 export type Temp = 'FRAME_POINTER' | 'RV' | { Local: LocalTemp };
 
-export type Exp =
-    | { CONST: number }
-    | { NAME: Label }
-    | { TEMP: Temp }
-    | { BINOP: [BinOp, Exp, Exp] }
-    | { MEM: Exp }
-    | { CALL: [Exp, Exp[]] }
-    | { ESEQ: [Stm, Exp] };
+export type ConstExp = { CONST: number };
+export type NameExp = { NAME: Label };
+export type TempExp = { TEMP: Temp };
+export type BinopExp = { BINOP: [BinOp, Exp, Exp] };
+export type MemExp = { MEM: Exp };
+export type CallExp = { CALL: [Exp, Exp[]] };
+export type EseqExp = { ESEQ: [Stm, Exp] };
+
+export type Exp = ConstExp | NameExp | TempExp | BinopExp | MemExp | CallExp | EseqExp;
 
 export enum BinOp {
     PLUS = 'PLUS',
@@ -42,16 +43,18 @@ export enum BinOp {
     UGE = 'UGE',
 }
 
-export type Stm =
-    | { EXP: Exp }
-    | { MOVE: [Exp, Exp] }
-    | { JUMP: [Exp, Label[]] }
-    | { CJUMP: [BinOp, Exp, Exp, Label, Label] }
-    | { SEQ: [Stm, Stm] }
-    | { LABEL: Label };
+export type ExpStm = { EXP: Exp };
+export type MoveStm = { MOVE: [Exp, Exp] };
+export type JumpStm = { JUMP: [Exp, Label[]] };
+export type CjumpStm = { CJUMP: [Exp, Label, Label] };
+export type SeqStm = { SEQ: [Stm, Stm] };
+export type LabelStm = { LABEL: Label };
+
+export type Stm = ExpStm | MoveStm | JumpStm | CjumpStm | SeqStm | LabelStm;
 
 export type Frame = {
-    name: Label;
+    name: string;
+    label: Label;
     formals: boolean[];
     locals: boolean[];
     actual_arg: number;
@@ -59,15 +62,20 @@ export type Frame = {
     actual_reg: number;
 };
 
-export type FunFrag = { Proc: { body: Stm; frame: Frame } };
+export type FunFrag = {
+    Proc: {
+        body: Stm[];
+        frame: Frame;
+    };
+};
 
-export type StringFrag = { ConstString: [Label, string] };
+export type StringFrag = {
+    ConstString: [Label, string];
+};
 
 export type Frag = FunFrag | StringFrag;
 
-export type Fragments = {
-    Ok: Frag[];
-};
+export type CanonizedFragments = Frag[];
 
 /*
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

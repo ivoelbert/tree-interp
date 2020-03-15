@@ -1,42 +1,74 @@
-import { Exp, Temp, Frag, FunFrag, StringFrag, Label } from './treeTypes';
+import { Exp, Frag, FunFrag, StringFrag, Stm, Label, Temp } from './treeTypes';
+import { NotImplementedError, assertExists, UnreachableError, StructuralMap } from './utils/utils';
+import { accessExpsFromFormals } from './frame';
+import { findFunction, findLabelIndex } from './utils/treeUtils';
+import { isFunFrag, isStringFrag } from './utils/fragPatterns';
 import {
-    isFunFrag,
-    isStringFrag,
-    findFunction,
-    labelFromName,
-    TempMap,
-} from './treeHelpers';
-import { NotImplementedError, assertExists } from './utils';
+    isMemExp,
+    isTempExp,
+    isConstExp,
+    isNameExp,
+    isBinopExp,
+    isCallExp,
+    isEseqExp,
+} from './utils/expPatterns';
+import {
+    isExpStm,
+    isMoveStm,
+    isJumpStm,
+    isCjumpStm,
+    isSeqStm,
+    isLabelStm,
+} from './utils/stmPatterns';
 
 const FRAME_POINTER_OFFSET = 1024 * 1024;
 
+/**
+ *  TODO:
+ *  - runtime functions
+ *  - store string in labels
+ *  - rest of evalExp
+ *  - build a Map to better find functions
+ *  - get rid of the stringFrags array, those will live in the labels table
+ */
+
 export class TreeInterpreter {
-    private funFrags: FunFrag[];
+    // Fragments corresponding to functions.
+    private funFrags: Map<string, FunFrag>;
+
+    // Fragments corresponding to strings. PROBABLY NOT NEEDED!
     private stringFrags: StringFrag[];
 
     // Map Temps to values
-    private temps: TempMap;
+    private temps: StructuralMap<Temp, number>;
+
+    // Map Labels to values
+    private labels: StructuralMap<Label, number>;
 
     // Map memory location to values
     private mem: Map<number, number>;
 
     constructor(fragments: Frag[]) {
-        this.temps = new TempMap();
+        this.temps = new StructuralMap();
+        this.labels = new StructuralMap();
         this.mem = new Map();
 
-        this.funFrags = fragments.filter(isFunFrag);
+        this.funFrags = new Map();
+        fragments.filter(isFunFrag).forEach(frag => {
+            this.funFrags.set(frag.Proc.frame.name, frag);
+        });
         this.stringFrags = fragments.filter(isStringFrag);
     }
 
     public run = (): number => {
         // A program starts by calling the function _tigermain
-        const mainLabel = labelFromName('_tigermain');
+        const mainLabel = '_tigermain';
         return this.evalFunction(mainLabel, []);
     };
 
-    private evalFunction = (name: Label, args: number[]): number => {
+    private evalFunction = (name: string, args: number[]): number => {
         // Find the function and extract it's body and frame.
-        const fragment = findFunction(this.funFrags, name);
+        const fragment = assertExists(this.funFrags.get(name));
         const { body, frame } = fragment.Proc;
 
         // Store the Temps, so when we come out of this function we can restore them
@@ -46,9 +78,11 @@ export class TreeInterpreter {
         const prevFp = assertExists(this.temps.get('FRAME_POINTER'));
         this.temps.set('FRAME_POINTER', prevFp - FRAME_POINTER_OFFSET);
 
-        // Set up the formals
+        // Set up the formals so we can exec the body
+        this.setupFormals(args, frame.formals);
 
-        // Ejecutar con todo seteado
+        // The machine state is ready to run the body, do it.
+        this.execStms(body);
 
         // Restore the Temps
         this.temps = tempsToRestore;
@@ -56,7 +90,146 @@ export class TreeInterpreter {
         throw new NotImplementedError();
     };
 
+    /**
+     *  Execute stms in order, there may be internal jumps
+     *  to previous or following stms. This can loop forever!
+     */
+    private execStms = (stms: Stm[]): void => {
+        // Start executing the first stm
+        let executedStmIndex = 0;
+
+        while (executedStmIndex < stms.length) {
+            const stm = stms[executedStmIndex];
+
+            // Evaluate the current stm
+            const maybeLabel: Label | null = this.evalStm(stm);
+
+            // Find the next stm to evaluate
+            if (maybeLabel === null) {
+                // If no jump continue executing the next stm
+                executedStmIndex++;
+            } else {
+                // We've got a label, find the corresponding stm and continue executing from there
+                const nextStmIndex = findLabelIndex(stms, maybeLabel);
+                executedStmIndex = nextStmIndex;
+            }
+        }
+    };
+
+    // Store each value from args in the corresponding temp/mem location
+    private setupFormals = (args: number[], formals: boolean[]): void => {
+        const accessExps = accessExpsFromFormals(formals);
+
+        args.forEach((arg: number, argIdx: number) => {
+            const access = accessExps[argIdx];
+
+            if (isMemExp(access)) {
+                // Evaluate the memory location and store the arg there
+                const memLocation = this.evalExp(access.MEM);
+                this.mem.set(memLocation, arg);
+            } else if (isTempExp(access)) {
+                // Store the argument in the corresponding temp
+                const temp = access.TEMP;
+                this.temps.set(temp, arg);
+            } else {
+                // The access can be either MEM or TEMP.
+                throw new UnreachableError();
+            }
+        });
+    };
+
+    /**
+     *  Evaluate a Stm.
+     *  Return a Label if we need to jump somewhere, null otherwise
+     */
+    private evalStm = (stm: Stm): Label | null => {
+        if (isExpStm(stm)) {
+            this.evalExp(stm.EXP);
+            return null;
+        }
+
+        if (isMoveStm(stm)) {
+            const [toExp, fromExp] = stm.MOVE;
+            if (isTempExp(toExp)) {
+                const temp: Temp = toExp.TEMP;
+                const value: number = this.evalExp(fromExp);
+
+                this.temps.set(temp, value);
+                return null;
+            }
+            if (isMemExp(toExp)) {
+                const location: number = this.evalExp(toExp.MEM);
+                const value: number = this.evalExp(fromExp);
+
+                this.mem.set(location, value);
+                return null;
+            }
+
+            throw new UnreachableError(`MOVE to a non Temp nor Mem expression\n${toExp}\n`);
+        }
+
+        if (isJumpStm(stm)) {
+            const [where] = stm.JUMP;
+            if (isNameExp(where)) {
+                return where.NAME;
+            }
+
+            throw new UnreachableError(`JUMP to a non-Label expression:\n${where}\n`);
+        }
+
+        if (isCjumpStm(stm)) {
+            const [exp, labelTrue, labelFalse] = stm.CJUMP;
+
+            const condition = this.evalExp(exp);
+            return condition ? labelTrue : labelFalse;
+        }
+
+        if (isSeqStm(stm)) {
+            throw new UnreachableError('Found SEQ, not a canonical tree!');
+        }
+
+        if (isLabelStm(stm)) {
+            return null;
+        }
+
+        // No more cases
+        throw new UnreachableError();
+    };
+
+    /**
+     *  Evaluate an Exp.
+     *  Every exp evaluates to a number.
+     */
     private evalExp = (exp: Exp): number => {
-        throw new NotImplementedError();
+        if (isConstExp(exp)) {
+            return exp.CONST;
+        }
+
+        if (isNameExp(exp)) {
+            return assertExists(this.labels.get(exp.NAME));
+        }
+
+        if (isTempExp(exp)) {
+            return assertExists(this.temps.get(exp.TEMP));
+        }
+
+        if (isBinopExp(exp)) {
+            throw new NotImplementedError();
+        }
+
+        if (isMemExp(exp)) {
+            throw new NotImplementedError();
+        }
+
+        if (isCallExp(exp)) {
+            throw new NotImplementedError();
+        }
+
+        if (isEseqExp(exp)) {
+            throw new NotImplementedError();
+        }
+
+        // No more cases
+        throw new UnreachableError();
     };
 }
