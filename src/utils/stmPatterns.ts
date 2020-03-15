@@ -1,16 +1,5 @@
 import { Stm, LabelStm, ExpStm, MoveStm, JumpStm, CjumpStm, SeqStm } from '../treeTypes';
 
-/*
-export type ExpStm = { EXP: Exp };
-export type MoveStm = { MOVE: [Exp, Exp] };
-export type JumpStm = { JUMP: [Exp, Label[]] };
-export type CjumpStm = { CJUMP: [BinOp, Exp, Exp, Label, Label] };
-export type SeqStm = { SEQ: [Stm, Stm] };
-export type LabelStm = { LABEL: Label };
-
-export type Stm = ExpStm | MoveStm | JumpStm | CjumpStm | SeqStm | LabelStm;
-*/
-
 export const isExpStm = (stm: Stm): stm is ExpStm => {
     return 'EXP' in stm;
 };

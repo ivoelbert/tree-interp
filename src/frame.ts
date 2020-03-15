@@ -1,8 +1,8 @@
-import { Exp, BinOp, MemExp, TempExp } from './treeTypes';
+import { Exp, BinOp } from './treeTypes';
 
-const WORD_SZ = 4;
-const ARGS_GAP = WORD_SZ;
-const ARGS_INITIAL_LOCATION = 0;
+export const WORD_SZ = 4;
+export const ARGS_GAP = WORD_SZ;
+export const ARGS_INITIAL_LOCATION = 0;
 
 const inMemAccessExpFromLocation = (location: number): Exp => ({
     MEM: {

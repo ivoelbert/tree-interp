@@ -1,7 +1,7 @@
 import { Exp, Frag, FunFrag, StringFrag, Stm, Label, Temp } from './treeTypes';
 import { NotImplementedError, assertExists, UnreachableError, StructuralMap } from './utils/utils';
 import { accessExpsFromFormals } from './frame';
-import { findFunction, findLabelIndex } from './utils/treeUtils';
+import { findLabelIndex, evalBinop } from './utils/treeUtils';
 import { isFunFrag, isStringFrag } from './utils/fragPatterns';
 import {
     isMemExp,
@@ -20,44 +20,47 @@ import {
     isSeqStm,
     isLabelStm,
 } from './utils/stmPatterns';
+import { MemMap } from './utils/memMap';
+import { StringStorage } from './utils/stringStorage';
 
 const FRAME_POINTER_OFFSET = 1024 * 1024;
 
 /**
  *  TODO:
  *  - runtime functions
- *  - store string in labels
  *  - rest of evalExp
- *  - build a Map to better find functions
- *  - get rid of the stringFrags array, those will live in the labels table
  */
 
 export class TreeInterpreter {
-    // Fragments corresponding to functions.
-    private funFrags: Map<string, FunFrag>;
-
-    // Fragments corresponding to strings. PROBABLY NOT NEEDED!
-    private stringFrags: StringFrag[];
-
     // Map Temps to values
     private temps: StructuralMap<Temp, number>;
 
-    // Map Labels to values
+    // Map Labels to mem locations
     private labels: StructuralMap<Label, number>;
 
     // Map memory location to values
-    private mem: Map<number, number>;
+    private mem: MemMap;
+
+    // String storage
+    private stringStorage: StringStorage;
+
+    // Fragments corresponding to functions.
+    private functions: Map<string, FunFrag>;
 
     constructor(fragments: Frag[]) {
         this.temps = new StructuralMap();
         this.labels = new StructuralMap();
-        this.mem = new Map();
+        this.mem = new MemMap();
+        this.stringStorage = new StringStorage(this.mem, this.labels);
+        this.functions = new Map();
 
-        this.funFrags = new Map();
         fragments.filter(isFunFrag).forEach(frag => {
-            this.funFrags.set(frag.Proc.frame.name, frag);
+            this.functions.set(frag.Proc.frame.name, frag);
         });
-        this.stringFrags = fragments.filter(isStringFrag);
+
+        fragments.filter(isStringFrag).forEach(frag => {
+            this.stringStorage.storeString(frag);
+        });
     }
 
     public run = (): number => {
@@ -68,7 +71,7 @@ export class TreeInterpreter {
 
     private evalFunction = (name: string, args: number[]): number => {
         // Find the function and extract it's body and frame.
-        const fragment = assertExists(this.funFrags.get(name));
+        const fragment = assertExists(this.functions.get(name));
         const { body, frame } = fragment.Proc;
 
         // Store the Temps, so when we come out of this function we can restore them
@@ -180,8 +183,9 @@ export class TreeInterpreter {
         if (isCjumpStm(stm)) {
             const [exp, labelTrue, labelFalse] = stm.CJUMP;
 
+            // 0 means false, everything else means true.
             const condition = this.evalExp(exp);
-            return condition ? labelTrue : labelFalse;
+            return condition === 0 ? labelFalse : labelTrue;
         }
 
         if (isSeqStm(stm)) {
@@ -214,11 +218,17 @@ export class TreeInterpreter {
         }
 
         if (isBinopExp(exp)) {
-            throw new NotImplementedError();
+            const [op, leftExp, rightExp] = exp.BINOP;
+
+            const leftVal = this.evalExp(leftExp);
+            const rightVal = this.evalExp(rightExp);
+
+            return evalBinop(op, leftVal, rightVal);
         }
 
         if (isMemExp(exp)) {
-            throw new NotImplementedError();
+            const dir = this.evalExp(exp.MEM);
+            return assertExists(this.mem.get(dir));
         }
 
         if (isCallExp(exp)) {
@@ -226,7 +236,7 @@ export class TreeInterpreter {
         }
 
         if (isEseqExp(exp)) {
-            throw new NotImplementedError();
+            throw new UnreachableError('Found ESEQ, not a canonical tree!');
         }
 
         // No more cases
