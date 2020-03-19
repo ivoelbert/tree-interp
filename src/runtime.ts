@@ -68,6 +68,10 @@ export class Runtime {
         this.nameMap.set('+str_greater_or_equals', this.strGreaterOrEquals);
     }
 
+    getFunction = (name: string): RuntimeFunction | AsyncRuntimeFunction | undefined => {
+        return this.nameMap.get(name);
+    };
+
     /**
      *  Public functions
      */

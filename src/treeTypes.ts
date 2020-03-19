@@ -15,7 +15,7 @@ export type NameExp = { NAME: Label };
 export type TempExp = { TEMP: Temp };
 export type BinopExp = { BINOP: [BinOp, Exp, Exp] };
 export type MemExp = { MEM: Exp };
-export type CallExp = { CALL: [Exp, Exp[]] };
+export type CallExp = { CALL: [string, Exp, Exp[]] };
 export type EseqExp = { ESEQ: [Stm, Exp] };
 
 export type Exp = ConstExp | NameExp | TempExp | BinopExp | MemExp | CallExp | EseqExp;

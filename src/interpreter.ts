@@ -23,6 +23,7 @@ import {
 import { MemMap } from './utils/memMap';
 import { StringStorage } from './utils/stringStorage';
 import { CustomConsole } from './utils/console';
+import { Runtime } from './runtime';
 
 const FRAME_POINTER_OFFSET = 1024 * 1024;
 
@@ -47,6 +48,9 @@ export class TreeInterpreter {
     // Fragments corresponding to functions.
     private functions: Map<string, FunFrag>;
 
+    // Provides runtime functions
+    private runtime: Runtime;
+
     constructor(fragments: Frag[], private console: CustomConsole) {
         this.temps = new StructuralMap();
         this.labels = new StructuralMap();
@@ -61,15 +65,17 @@ export class TreeInterpreter {
         fragments.filter(isStringFrag).forEach(frag => {
             this.stringStorage.storeString(frag);
         });
+
+        this.runtime = new Runtime(this.mem, this.stringStorage, this.console);
     }
 
-    public run = (): number => {
+    public run = async (): Promise<number> => {
         // A program starts by calling the function _tigermain
         const mainLabel = '_tigermain';
-        return this.evalFunction(mainLabel, []);
+        return await this.evalFunction(mainLabel, []);
     };
 
-    private evalFunction = (name: string, args: number[]): number => {
+    private evalFunction = async (name: string, args: number[]): Promise<number> => {
         // Find the function and extract it's body and frame.
         const fragment = assertExists(this.functions.get(name));
         const { body, frame } = fragment.Proc;
@@ -82,10 +88,10 @@ export class TreeInterpreter {
         this.temps.set('FRAME_POINTER', prevFp - FRAME_POINTER_OFFSET);
 
         // Set up the formals so we can exec the body
-        this.setupFormals(args, frame.formals);
+        await this.setupFormals(args, frame.formals);
 
         // The machine state is ready to run the body, do it.
-        this.execStms(body);
+        await this.execStms(body);
 
         // Restore the Temps
         this.temps = tempsToRestore;
@@ -97,7 +103,7 @@ export class TreeInterpreter {
      *  Execute stms in order, there may be internal jumps
      *  to previous or following stms. This can loop forever!
      */
-    private execStms = (stms: Stm[]): void => {
+    private execStms = async (stms: Stm[]): Promise<void> => {
         // Start executing the first stm
         let executedStmIndex = 0;
 
@@ -105,7 +111,7 @@ export class TreeInterpreter {
             const stm = stms[executedStmIndex];
 
             // Evaluate the current stm
-            const maybeLabel: Label | null = this.evalStm(stm);
+            const maybeLabel: Label | null = await this.evalStm(stm);
 
             // Find the next stm to evaluate
             if (maybeLabel === null) {
@@ -120,15 +126,16 @@ export class TreeInterpreter {
     };
 
     // Store each value from args in the corresponding temp/mem location
-    private setupFormals = (args: number[], formals: boolean[]): void => {
+    private setupFormals = async (args: number[], formals: boolean[]): Promise<void> => {
         const accessExps = accessExpsFromFormals(formals);
 
-        args.forEach((arg: number, argIdx: number) => {
-            const access = accessExps[argIdx];
+        for (let i = 0; i < args.length; i++) {
+            const arg = args[i];
+            const access = accessExps[i];
 
             if (isMemExp(access)) {
                 // Evaluate the memory location and store the arg there
-                const memLocation = this.evalExp(access.MEM);
+                const memLocation = await this.evalExp(access.MEM);
                 this.mem.set(memLocation, arg);
             } else if (isTempExp(access)) {
                 // Store the argument in the corresponding temp
@@ -138,16 +145,16 @@ export class TreeInterpreter {
                 // The access can be either MEM or TEMP.
                 throw new UnreachableError();
             }
-        });
+        }
     };
 
     /**
      *  Evaluate a Stm.
      *  Return a Label if we need to jump somewhere, null otherwise
      */
-    private evalStm = (stm: Stm): Label | null => {
+    private evalStm = async (stm: Stm): Promise<Label | null> => {
         if (isExpStm(stm)) {
-            this.evalExp(stm.EXP);
+            await this.evalExp(stm.EXP);
             return null;
         }
 
@@ -155,14 +162,14 @@ export class TreeInterpreter {
             const [toExp, fromExp] = stm.MOVE;
             if (isTempExp(toExp)) {
                 const temp: Temp = toExp.TEMP;
-                const value: number = this.evalExp(fromExp);
+                const value: number = await this.evalExp(fromExp);
 
                 this.temps.set(temp, value);
                 return null;
             }
             if (isMemExp(toExp)) {
-                const location: number = this.evalExp(toExp.MEM);
-                const value: number = this.evalExp(fromExp);
+                const location: number = await this.evalExp(toExp.MEM);
+                const value: number = await this.evalExp(fromExp);
 
                 this.mem.set(location, value);
                 return null;
@@ -184,7 +191,7 @@ export class TreeInterpreter {
             const [exp, labelTrue, labelFalse] = stm.CJUMP;
 
             // 0 means false, everything else means true.
-            const condition = this.evalExp(exp);
+            const condition = await this.evalExp(exp);
             return condition === 0 ? labelFalse : labelTrue;
         }
 
@@ -204,7 +211,7 @@ export class TreeInterpreter {
      *  Evaluate an Exp.
      *  Every exp evaluates to a number.
      */
-    private evalExp = (exp: Exp): number => {
+    private evalExp = async (exp: Exp): Promise<number> => {
         if (isConstExp(exp)) {
             return exp.CONST;
         }
@@ -220,19 +227,32 @@ export class TreeInterpreter {
         if (isBinopExp(exp)) {
             const [op, leftExp, rightExp] = exp.BINOP;
 
-            const leftVal = this.evalExp(leftExp);
-            const rightVal = this.evalExp(rightExp);
+            const leftVal = await this.evalExp(leftExp);
+            const rightVal = await this.evalExp(rightExp);
 
             return evalBinop(op, leftVal, rightVal);
         }
 
         if (isMemExp(exp)) {
-            const dir = this.evalExp(exp.MEM);
+            const dir = await this.evalExp(exp.MEM);
             return assertExists(this.mem.get(dir));
         }
 
         if (isCallExp(exp)) {
-            throw new NotImplementedError();
+            const [name, labelExp, args] = exp.CALL;
+            const evaluatedArgs = await Promise.all(args.map(this.evalExp));
+
+            let returnValue: number;
+            const runtimeFunction = this.runtime.getFunction(name);
+            if (runtimeFunction !== undefined) {
+                returnValue = await runtimeFunction(evaluatedArgs);
+            } else {
+                returnValue = await this.evalFunction(name, evaluatedArgs);
+            }
+
+            this.temps.set('RV', returnValue);
+
+            return returnValue;
         }
 
         if (isEseqExp(exp)) {
