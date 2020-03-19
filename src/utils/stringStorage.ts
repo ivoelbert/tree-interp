@@ -15,16 +15,24 @@ export class StringStorage {
 
     constructor(private memMap: MemMap, private labelMap: StructuralMap<Label, number>) {}
 
-    storeString = (stringFrag: StringFrag): void => {
+    storeString = (stringFrag: StringFrag): number => {
         const [label, str] = stringFrag.ConstString;
 
+        const addr = this.storeUnlabeledString(str);
+
+        this.labelMap.set(label, addr);
+
+        return addr;
+    };
+
+    storeUnlabeledString = (str: string): number => {
         const addr = this.memMap.alloc(1);
         this.strings.push(str);
         const pointer = this.strings.length - 1;
 
         this.memMap.set(addr, pointer);
 
-        this.labelMap.set(label, addr);
+        return addr;
     };
 
     loadString = (addr: number): string => {

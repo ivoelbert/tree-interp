@@ -1,4 +1,4 @@
-import { Exp, Frag, FunFrag, StringFrag, Stm, Label, Temp } from './treeTypes';
+import { Exp, Frag, FunFrag, Stm, Label, Temp } from './treeTypes';
 import { NotImplementedError, assertExists, UnreachableError, StructuralMap } from './utils/utils';
 import { accessExpsFromFormals } from './frame';
 import { findLabelIndex, evalBinop } from './utils/treeUtils';
@@ -22,6 +22,7 @@ import {
 } from './utils/stmPatterns';
 import { MemMap } from './utils/memMap';
 import { StringStorage } from './utils/stringStorage';
+import { CustomConsole } from './utils/console';
 
 const FRAME_POINTER_OFFSET = 1024 * 1024;
 
@@ -30,7 +31,6 @@ const FRAME_POINTER_OFFSET = 1024 * 1024;
  *  - runtime functions
  *  - rest of evalExp
  */
-
 export class TreeInterpreter {
     // Map Temps to values
     private temps: StructuralMap<Temp, number>;
@@ -47,7 +47,7 @@ export class TreeInterpreter {
     // Fragments corresponding to functions.
     private functions: Map<string, FunFrag>;
 
-    constructor(fragments: Frag[]) {
+    constructor(fragments: Frag[], private console: CustomConsole) {
         this.temps = new StructuralMap();
         this.labels = new StructuralMap();
         this.mem = new MemMap();

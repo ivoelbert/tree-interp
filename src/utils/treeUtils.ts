@@ -49,41 +49,41 @@ export const evalBinop = (op: BinOp, leftVal: number, rightVal: number): number 
             return leftVal >> rightVal;
 
         case BinOp.XOR:
-            return leftVal % rightVal;
+            return leftVal ^ rightVal;
 
         case BinOp.EQ:
-            return leftVal === rightVal ? 1 : 0;
+            return Number(leftVal === rightVal);
 
         case BinOp.NE:
-            return leftVal !== rightVal ? 1 : 0;
+            return Number(leftVal !== rightVal);
 
         case BinOp.LT:
-            return leftVal < rightVal ? 1 : 0;
+            return Number(leftVal < rightVal);
 
         case BinOp.GT:
-            return leftVal > rightVal ? 1 : 0;
+            return Number(leftVal > rightVal);
 
         case BinOp.LE:
-            return leftVal <= rightVal ? 1 : 0;
+            return Number(leftVal <= rightVal);
 
         case BinOp.GE:
-            return leftVal >= rightVal ? 1 : 0;
+            return Number(leftVal >= rightVal);
 
         case BinOp.ULT:
             // Not sure, our parser doesn't even generate this
-            return leftVal < rightVal ? 1 : 0;
+            return Number(leftVal < rightVal);
 
         case BinOp.ULE:
             // Not sure, our parser doesn't even generate this
-            return leftVal <= rightVal ? 1 : 0;
+            return Number(leftVal <= rightVal);
 
         case BinOp.UGT:
             // Not sure, our parser doesn't even generate this
-            return leftVal > rightVal ? 1 : 0;
+            return Number(leftVal > rightVal);
 
         case BinOp.UGE:
             // Not sure, our parser doesn't even generate this
-            return leftVal >= rightVal ? 1 : 0;
+            return Number(leftVal >= rightVal);
 
         default:
             throw new UnreachableError();
