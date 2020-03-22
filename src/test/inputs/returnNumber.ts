@@ -4,46 +4,14 @@ export const returnNumberTestInput: Frag[] = [
     {
         Proc: {
             body: [
-                {
-                    LABEL: {
-                        prefix: 0,
-                        offset: 68,
-                    },
-                },
-                {
-                    EXP: {
-                        CONST: 42,
-                    },
-                },
-                {
-                    JUMP: [
-                        {
-                            NAME: {
-                                prefix: 0,
-                                offset: 67,
-                            },
-                        },
-                        [
-                            {
-                                prefix: 0,
-                                offset: 67,
-                            },
-                        ],
-                    ],
-                },
-                {
-                    LABEL: {
-                        prefix: 0,
-                        offset: 67,
-                    },
-                },
+                { LABEL: { prefix: 0, offset: 163 } },
+                { MOVE: [{ TEMP: 'RV' }, { CONST: 42 }] },
+                { JUMP: [{ NAME: { prefix: 0, offset: 162 } }, [{ prefix: 0, offset: 162 }]] },
+                { LABEL: { prefix: 0, offset: 162 } },
             ],
             frame: {
                 name: '_tigermain',
-                label: {
-                    prefix: 0,
-                    offset: 65,
-                },
+                label: { prefix: 0, offset: 160 },
                 formals: [],
                 locals: [],
                 actual_arg: 0,

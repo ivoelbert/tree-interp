@@ -4,16 +4,16 @@ export const returnVariableTestInput: Frag[] = [
     {
         Proc: {
             body: [
-                { LABEL: { prefix: 0, offset: 212 } },
-                { MOVE: [{ TEMP: { Local: { prefix: 0, offset: 210 } } }, { CONST: 42 }] },
+                { LABEL: { prefix: 0, offset: 93 } },
+                { MOVE: [{ TEMP: { Local: { prefix: 0, offset: 91 } } }, { CONST: 42 }] },
                 { EXP: { CONST: 0 } },
-                { EXP: { TEMP: { Local: { prefix: 0, offset: 210 } } } },
-                { JUMP: [{ NAME: { prefix: 0, offset: 211 } }, [{ prefix: 0, offset: 211 }]] },
-                { LABEL: { prefix: 0, offset: 211 } },
+                { MOVE: [{ TEMP: 'RV' }, { TEMP: { Local: { prefix: 0, offset: 91 } } }] },
+                { JUMP: [{ NAME: { prefix: 0, offset: 92 } }, [{ prefix: 0, offset: 92 }]] },
+                { LABEL: { prefix: 0, offset: 92 } },
             ],
             frame: {
                 name: '_tigermain',
-                label: { prefix: 0, offset: 208 },
+                label: { prefix: 0, offset: 89 },
                 formals: [],
                 locals: [],
                 actual_arg: 0,
