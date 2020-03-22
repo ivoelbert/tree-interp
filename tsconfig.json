@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "es2017",
         "module": "commonjs",
         "sourceMap": true,
         "rootDir": "src/",
@@ -11,7 +11,7 @@
         "declaration": true,
         "alwaysStrict": true,
         "noImplicitAny": true,
-        "strict": true,
+        "strict": true
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src/**/*.ts"]
 }

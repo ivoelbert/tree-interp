@@ -4,72 +4,66 @@ import { WORD_SZ } from './frame';
 import { StringStorage } from './utils/stringStorage';
 import { CustomConsole } from './utils/console';
 
-/**
- *  RUNTIME FUNCTIONS:
- *
- *  Public. This can be used by any user program:
- *  - print
- *  - flush
- *  - getchar
- *  - ord
- *  - chr
- *  - size
- *  - substring
- *  - concat
- *  - not
- *
- *  Private. This are called from the generated code.
- *  - +alloc_array
- *  - +alloc_record
- *  - +str_equals
- *  - +str_not_equals
- *  - +str_less
- *  - +str_less_or_equals
- *  - +str_greater
- *  - +str_greater_or_equals
- */
+interface RuntimeFunctionsByName {
+    print: RuntimeFunction | AsyncRuntimeFunction;
+    flush: RuntimeFunction | AsyncRuntimeFunction;
+    getchar: RuntimeFunction | AsyncRuntimeFunction;
+    ord: RuntimeFunction | AsyncRuntimeFunction;
+    chr: RuntimeFunction | AsyncRuntimeFunction;
+    size: RuntimeFunction | AsyncRuntimeFunction;
+    substring: RuntimeFunction | AsyncRuntimeFunction;
+    concat: RuntimeFunction | AsyncRuntimeFunction;
+    not: RuntimeFunction | AsyncRuntimeFunction;
+    '+alloc_array': RuntimeFunction | AsyncRuntimeFunction;
+    '+alloc_record': RuntimeFunction | AsyncRuntimeFunction;
+    '+str_equals': RuntimeFunction | AsyncRuntimeFunction;
+    '+str_not_equals': RuntimeFunction | AsyncRuntimeFunction;
+    '+str_less': RuntimeFunction | AsyncRuntimeFunction;
+    '+str_less_or_equals': RuntimeFunction | AsyncRuntimeFunction;
+    '+str_greater': RuntimeFunction | AsyncRuntimeFunction;
+    '+str_greater_or_equals': RuntimeFunction | AsyncRuntimeFunction;
+}
+
+export type RuntimeFunctionNames = keyof RuntimeFunctionsByName;
 
 type RuntimeFunction = (args: number[]) => number;
 type AsyncRuntimeFunction = (args: number[]) => Promise<number>;
 
 export class Runtime {
-    private nameMap: Map<string, RuntimeFunction | AsyncRuntimeFunction>;
+    private nameMap: RuntimeFunctionsByName;
 
     constructor(
         private memMap: MemMap,
         private stringStorage: StringStorage,
         private console: CustomConsole
     ) {
-        this.nameMap = new Map();
-
-        /**
-         *  Public functions
-         */
-        this.nameMap.set('print', this.print);
-        this.nameMap.set('flush', this.flush);
-        this.nameMap.set('getchar', this.getchar);
-        this.nameMap.set('ord', this.ord);
-        this.nameMap.set('chr', this.chr);
-        this.nameMap.set('size', this.size);
-        this.nameMap.set('substring', this.substring);
-        this.nameMap.set('concat', this.concat);
-        this.nameMap.set('not', this.not);
-
-        /**
-         *  Internal functions
-         */
-        this.nameMap.set('+alloc_array', this.allocArray);
-        this.nameMap.set('+alloc_record', this.allocRecord);
-        this.nameMap.set('+str_equals', this.strEquals);
-        this.nameMap.set('+str_not_equals', this.strNotEquals);
-        this.nameMap.set('+str_less', this.strLess);
-        this.nameMap.set('+str_less_or_equals', this.strLessOrEquals);
-        this.nameMap.set('+str_greater', this.strGreater);
-        this.nameMap.set('+str_greater_or_equals', this.strGreaterOrEquals);
+        this.nameMap = {
+            print: this.print,
+            flush: this.flush,
+            getchar: this.getchar,
+            ord: this.ord,
+            chr: this.chr,
+            size: this.size,
+            substring: this.substring,
+            concat: this.concat,
+            not: this.not,
+            '+alloc_array': this.allocArray,
+            '+alloc_record': this.allocRecord,
+            '+str_equals': this.strEquals,
+            '+str_not_equals': this.strNotEquals,
+            '+str_less': this.strLess,
+            '+str_less_or_equals': this.strLessOrEquals,
+            '+str_greater': this.strGreater,
+            '+str_greater_or_equals': this.strGreaterOrEquals,
+        };
     }
 
-    getFunction = (name: string): RuntimeFunction | AsyncRuntimeFunction | undefined => {
-        return this.nameMap.get(name);
+    getFunction = (name: RuntimeFunctionNames): RuntimeFunction | AsyncRuntimeFunction => {
+        return this.nameMap[name];
+    };
+
+    maybeGetFunction = (name: string): RuntimeFunction | AsyncRuntimeFunction | undefined => {
+        return this.nameMap[name as RuntimeFunctionNames];
     };
 
     /**

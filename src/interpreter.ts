@@ -27,11 +27,6 @@ import { Runtime } from './runtime';
 
 const FRAME_POINTER_OFFSET = 1024 * 1024;
 
-/**
- *  TODO:
- *  - runtime functions
- *  - rest of evalExp
- */
 export class TreeInterpreter {
     // Map Temps to values
     private temps: StructuralMap<Temp, number>;
@@ -84,7 +79,7 @@ export class TreeInterpreter {
         const tempsToRestore = this.temps.clone();
 
         // Move the frame pointer register like... A lot.
-        const prevFp = assertExists(this.temps.get('FRAME_POINTER'));
+        const prevFp = this.temps.get('FRAME_POINTER') ?? 0;
         this.temps.set('FRAME_POINTER', prevFp - FRAME_POINTER_OFFSET);
 
         // Set up the formals so we can exec the body
@@ -93,10 +88,14 @@ export class TreeInterpreter {
         // The machine state is ready to run the body, do it.
         await this.execStms(body);
 
+        // Retreive the return value, default to 0
+        const rv = this.temps.get('RV') ?? 0;
+
         // Restore the Temps
         this.temps = tempsToRestore;
+        this.temps.set('RV', rv);
 
-        throw new NotImplementedError();
+        return rv;
     };
 
     /**
@@ -243,7 +242,7 @@ export class TreeInterpreter {
             const evaluatedArgs = await Promise.all(args.map(this.evalExp));
 
             let returnValue: number;
-            const runtimeFunction = this.runtime.getFunction(name);
+            const runtimeFunction = this.runtime.maybeGetFunction(name);
             if (runtimeFunction !== undefined) {
                 returnValue = await runtimeFunction(evaluatedArgs);
             } else {
