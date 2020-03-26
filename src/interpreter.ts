@@ -1,5 +1,5 @@
 import { Exp, Frag, FunFrag, Stm, Label, Temp } from './treeTypes';
-import { NotImplementedError, assertExists, UnreachableError, StructuralMap } from './utils/utils';
+import { assertExists, UnreachableError, StructuralMap } from './utils/utils';
 import { accessExpsFromFormals } from './frame';
 import { findLabelIndex, evalBinop } from './utils/treeUtils';
 import { isFunFrag, isStringFrag } from './utils/fragPatterns';
