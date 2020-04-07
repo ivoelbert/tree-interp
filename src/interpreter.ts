@@ -1,16 +1,17 @@
-import { Exp, Frag, FunFrag, Stm, Label, Temp } from './treeTypes';
-import { assertExists, UnreachableError, StructuralMap } from './utils/utils';
+import { Exp, Frag, FunFrag, Stm, Label, GlobalTemp, LocalTemp } from './treeTypes';
+import { assertExists, UnreachableError } from './utils/utils';
 import { accessExpsFromFormals } from './frame';
 import { findLabelIndex, evalBinop } from './utils/treeUtils';
 import { isFunFrag, isStringFrag } from './utils/fragPatterns';
 import {
     isMemExp,
-    isTempExp,
     isConstExp,
     isNameExp,
     isBinopExp,
     isCallExp,
     isEseqExp,
+    isLocalExp,
+    isGlobalExp,
 } from './utils/expPatterns';
 import {
     isExpStm,
@@ -25,14 +26,15 @@ import { StringStorage } from './utils/stringStorage';
 import { CustomConsole } from './utils/console';
 import { Runtime } from './runtime';
 
-const FRAME_POINTER_OFFSET = 1024 * 1024;
-
 export class TreeInterpreter {
+    // Map Locals to values, this keeps track of the *current* locals map (per function)
+    private locals: Map<LocalTemp, number>;
+
     // Map Temps to values
-    private temps: StructuralMap<Temp, number>;
+    private globals: Map<GlobalTemp, number>;
 
     // Map Labels to mem locations
-    private labels: StructuralMap<Label, number>;
+    private labels: Map<Label, number>;
 
     // Map memory location to values
     private mem: MemMap;
@@ -47,17 +49,18 @@ export class TreeInterpreter {
     private runtime: Runtime;
 
     constructor(fragments: Frag[], private console: CustomConsole) {
-        this.temps = new StructuralMap();
-        this.labels = new StructuralMap();
+        this.locals = new Map();
+        this.globals = new Map();
+        this.labels = new Map();
         this.mem = new MemMap();
         this.stringStorage = new StringStorage(this.mem, this.labels);
         this.functions = new Map();
 
-        fragments.filter(isFunFrag).forEach(frag => {
+        fragments.filter(isFunFrag).forEach((frag) => {
             this.functions.set(frag.Proc.frame.name, frag);
         });
 
-        fragments.filter(isStringFrag).forEach(frag => {
+        fragments.filter(isStringFrag).forEach((frag) => {
             this.stringStorage.storeString(frag);
         });
 
@@ -75,13 +78,6 @@ export class TreeInterpreter {
         const fragment = assertExists(this.functions.get(name));
         const { body, frame } = fragment.Proc;
 
-        // Store the Temps, so when we come out of this function we can restore them
-        const tempsToRestore = this.temps.clone();
-
-        // Move the frame pointer register like... A lot.
-        const prevFp = this.temps.get('FRAME_POINTER') ?? 0;
-        this.temps.set('FRAME_POINTER', prevFp - FRAME_POINTER_OFFSET);
-
         // Set up the formals so we can exec the body
         await this.setupFormals(args, frame.formals);
 
@@ -89,11 +85,7 @@ export class TreeInterpreter {
         await this.execStms(body);
 
         // Retreive the return value, default to 0
-        const rv = this.temps.get('RV') ?? 0;
-
-        // Restore the Temps
-        this.temps = tempsToRestore;
-        this.temps.set('RV', rv);
+        const rv = this.globals.get('rv') ?? 0;
 
         return rv;
     };
@@ -125,21 +117,19 @@ export class TreeInterpreter {
     };
 
     // Store each value from args in the corresponding temp/mem location
-    private setupFormals = async (args: number[], formals: boolean[]): Promise<void> => {
+    private setupFormals = async (args: number[], formals: [string, boolean][]): Promise<void> => {
         const accessExps = accessExpsFromFormals(formals);
 
         for (let i = 0; i < args.length; i++) {
             const arg = args[i];
             const access = accessExps[i];
 
-            if (isMemExp(access)) {
+            if (isGlobalExp(access)) {
                 // Evaluate the memory location and store the arg there
-                const memLocation = await this.evalExp(access.MEM);
-                this.mem.set(memLocation, arg);
-            } else if (isTempExp(access)) {
+                this.globals.set(access.GLOBAL, arg);
+            } else if (isLocalExp(access)) {
                 // Store the argument in the corresponding temp
-                const temp = access.TEMP;
-                this.temps.set(temp, arg);
+                this.locals.set(access.LOCAL, arg);
             } else {
                 // The access can be either MEM or TEMP.
                 throw new UnreachableError();
@@ -159,13 +149,20 @@ export class TreeInterpreter {
 
         if (isMoveStm(stm)) {
             const [toExp, fromExp] = stm.MOVE;
-            if (isTempExp(toExp)) {
-                const temp: Temp = toExp.TEMP;
+            if (isLocalExp(toExp)) {
                 const value: number = await this.evalExp(fromExp);
 
-                this.temps.set(temp, value);
+                this.locals.set(toExp.LOCAL, value);
                 return null;
             }
+
+            if (isGlobalExp(toExp)) {
+                const value: number = await this.evalExp(fromExp);
+
+                this.globals.set(toExp.GLOBAL, value);
+                return null
+            }
+
             if (isMemExp(toExp)) {
                 const location: number = await this.evalExp(toExp.MEM);
                 const value: number = await this.evalExp(fromExp);
@@ -187,10 +184,13 @@ export class TreeInterpreter {
         }
 
         if (isCjumpStm(stm)) {
-            const [exp, labelTrue, labelFalse] = stm.CJUMP;
+            const [op, leftExp, rightExp, labelTrue, labelFalse] = stm.CJUMP;
+
+            const leftVal = await this.evalExp(leftExp);
+            const rightVal = await this.evalExp(rightExp);
 
             // 0 means false, everything else means true.
-            const condition = await this.evalExp(exp);
+            const condition = evalBinop(op, leftVal, rightVal);
             return condition === 0 ? labelFalse : labelTrue;
         }
 
@@ -219,8 +219,12 @@ export class TreeInterpreter {
             return assertExists(this.labels.get(exp.NAME));
         }
 
-        if (isTempExp(exp)) {
-            return assertExists(this.temps.get(exp.TEMP));
+        if (isLocalExp(exp)) {
+            return assertExists(this.locals.get(exp.LOCAL));
+        }
+
+        if (isGlobalExp(exp)) {
+            return assertExists(this.locals.get(exp.GLOBAL));
         }
 
         if (isBinopExp(exp)) {
@@ -249,7 +253,7 @@ export class TreeInterpreter {
                 returnValue = await this.evalFunction(name, evaluatedArgs);
             }
 
-            this.temps.set('RV', returnValue);
+            this.globals.set('rv', returnValue);
 
             return returnValue;
         }

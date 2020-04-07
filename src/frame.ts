@@ -1,28 +1,25 @@
-import { Exp, BinOp } from './treeTypes';
+import { Exp } from './treeTypes';
 
 export const WORD_SZ = 4;
-export const ARGS_GAP = WORD_SZ;
-export const ARGS_INITIAL_LOCATION = 0;
 
-const inMemAccessExpFromLocation = (location: number): Exp => ({
-    MEM: {
-        BINOP: [
-            BinOp.PLUS,
-            {
-                TEMP: 'FRAME_POINTER',
-            },
-            {
-                CONST: location,
-            },
-        ],
-    },
+const inGlobalAccessExp = (name: string): Exp => ({
+    GLOBAL: name,
+});
+
+const inLocalAccessExp = (name: string): Exp => ({
+    LOCAL: name,
 });
 
 // For now, all formals go in memory
-const accessExpFromFormal = (doesFormalEscape: boolean, idx: number): Exp => {
-    return inMemAccessExpFromLocation(ARGS_INITIAL_LOCATION + idx * ARGS_GAP);
+const accessExpFromFormal = (formal: [string, boolean]): Exp => {
+    const [name, escapes] = formal;
+    if (escapes) {
+        return inGlobalAccessExp(name);
+    } else {
+        return inLocalAccessExp(name);
+    }
 };
 
-export const accessExpsFromFormals = (formals: boolean[]): Exp[] => {
+export const accessExpsFromFormals = (formals: [string, boolean][]): Exp[] => {
     return formals.map(accessExpFromFormal);
 };

@@ -1,52 +1,44 @@
-export type Label = {
-    prefix: number;
-    offset: number;
-};
-
-export type LocalTemp = {
-    prefix: number;
-    offset: number;
-};
-
-export type Temp = 'FRAME_POINTER' | 'RV' | { Local: LocalTemp };
+export type Label = string;
+export type LocalTemp = string;
+export type GlobalTemp = string;
 
 export type ConstExp = { CONST: number };
 export type NameExp = { NAME: Label };
-export type TempExp = { TEMP: Temp };
+export type LocalExp = { LOCAL: LocalTemp };
+export type GlobalExp = { GLOBAL: GlobalTemp };
 export type BinopExp = { BINOP: [BinOp, Exp, Exp] };
 export type MemExp = { MEM: Exp };
 export type CallExp = { CALL: [string, Exp, Exp[]] };
 export type EseqExp = { ESEQ: [Stm, Exp] };
 
-export type Exp = ConstExp | NameExp | TempExp | BinopExp | MemExp | CallExp | EseqExp;
+export type Exp = ConstExp | NameExp | LocalExp | GlobalExp | BinopExp | MemExp | CallExp | EseqExp;
 
-export enum BinOp {
-    PLUS = 'PLUS',
-    MINUS = 'MINUS',
-    MUL = 'MUL',
-    DIV = 'DIV',
-    AND = 'AND',
-    OR = 'OR',
-    LSHIFT = 'LSHIFT',
-    RSHIFT = 'RSHIFT',
-    ARSHIFT = 'ARSHIFT',
-    XOR = 'XOR',
-    EQ = 'EQ',
-    NE = 'NE',
-    LT = 'LT',
-    GT = 'GT',
-    LE = 'LE',
-    GE = 'GE',
-    ULT = 'ULT',
-    ULE = 'ULE',
-    UGT = 'UGT',
-    UGE = 'UGE',
-}
+export type BinOp =
+    | 'PLUS'
+    | 'MINUS'
+    | 'MUL'
+    | 'DIV'
+    | 'AND'
+    | 'OR'
+    | 'LSHIFT'
+    | 'RSHIFT'
+    | 'ARSHIFT'
+    | 'XOR'
+    | 'EQ'
+    | 'NE'
+    | 'LT'
+    | 'GT'
+    | 'LE'
+    | 'GE'
+    | 'ULT'
+    | 'ULE'
+    | 'UGT'
+    | 'UGE';
 
 export type ExpStm = { EXP: Exp };
 export type MoveStm = { MOVE: [Exp, Exp] };
 export type JumpStm = { JUMP: [Exp, Label[]] };
-export type CjumpStm = { CJUMP: [Exp, Label, Label] };
+export type CjumpStm = { CJUMP: [BinOp, Exp, Exp, Label, Label] };
 export type SeqStm = { SEQ: [Stm, Stm] };
 export type LabelStm = { LABEL: Label };
 
@@ -55,11 +47,11 @@ export type Stm = ExpStm | MoveStm | JumpStm | CjumpStm | SeqStm | LabelStm;
 export type Frame = {
     name: string;
     label: Label;
-    formals: boolean[];
-    locals: boolean[];
-    actual_arg: number;
-    actual_local: number;
-    actual_reg: number;
+    formals: [string, boolean][];
+    locals: string[];
+    arg_index: number;
+    local_index: number;
+    mem_index: number;
 };
 
 export type FunFrag = {

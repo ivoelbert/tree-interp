@@ -1,14 +1,13 @@
 import { MockConsole } from './mockConsole';
 import { Runtime } from '../runtime';
 import { MemMap } from '../utils/memMap';
-import { StructuralMap } from '../utils/utils';
 import { Label, Frag } from '../treeTypes';
 import { StringStorage } from '../utils/stringStorage';
 import { TreeInterpreter } from '../interpreter';
 
 interface RuntimeTestDependencies {
     memMap: MemMap;
-    labels: StructuralMap<Label, number>;
+    labels: Map<Label, number>;
     stringStorage: StringStorage;
     customConsole: MockConsole;
     runtime: Runtime;
@@ -16,7 +15,7 @@ interface RuntimeTestDependencies {
 
 export const runtimeDependenciesFactory = (): RuntimeTestDependencies => {
     const memMap = new MemMap();
-    const labels = new StructuralMap<Label, number>();
+    const labels = new Map<Label, number>();
     const stringStorage = new StringStorage(memMap, labels);
     const console = new MockConsole();
     const runtime = new Runtime(memMap, stringStorage, console);

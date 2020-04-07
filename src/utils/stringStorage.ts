@@ -1,5 +1,5 @@
 import { MemMap } from './memMap';
-import { StructuralMap, assertExists } from './utils';
+import { assertExists } from './utils';
 import { Label, StringFrag } from '../treeTypes';
 
 /**
@@ -13,7 +13,7 @@ import { Label, StringFrag } from '../treeTypes';
 export class StringStorage {
     private strings: string[] = [];
 
-    constructor(private memMap: MemMap, private labelMap: StructuralMap<Label, number>) {}
+    constructor(private memMap: MemMap, private labelMap: Map<Label, number>) {}
 
     storeString = (stringFrag: StringFrag): number => {
         const [label, str] = stringFrag.ConstString;

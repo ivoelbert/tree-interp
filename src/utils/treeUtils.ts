@@ -1,15 +1,10 @@
-import { Label, FunFrag, Stm, BinOp } from '../treeTypes';
+import { Label, Stm, BinOp } from '../treeTypes';
 import { isLabelStm } from './stmPatterns';
 import { UnreachableError } from './utils';
 
-// Two Labels are equal if their representation is deeply equal
-export const eqLabel = (l1: Label, l2: Label): boolean => {
-    return l1.offset === l2.offset && l1.prefix === l2.prefix;
-};
-
 export const findLabelIndex = (stms: Stm[], label: Label): number => {
-    const foundIndex = stms.findIndex(stm => {
-        return isLabelStm(stm) && eqLabel(stm.LABEL, label);
+    const foundIndex = stms.findIndex((stm) => {
+        return isLabelStm(stm) && stm.LABEL === label;
     });
 
     if (foundIndex === -1) {
@@ -21,67 +16,67 @@ export const findLabelIndex = (stms: Stm[], label: Label): number => {
 
 export const evalBinop = (op: BinOp, leftVal: number, rightVal: number): number => {
     switch (op) {
-        case BinOp.PLUS:
+        case 'PLUS':
             return leftVal + rightVal;
 
-        case BinOp.MINUS:
+        case 'MINUS':
             return leftVal - rightVal;
 
-        case BinOp.MUL:
+        case 'MUL':
             return leftVal * rightVal;
 
-        case BinOp.DIV:
+        case 'DIV':
             return leftVal / rightVal;
 
-        case BinOp.AND:
+        case 'AND':
             return leftVal && rightVal;
 
-        case BinOp.OR:
+        case 'OR':
             return leftVal || rightVal;
 
-        case BinOp.LSHIFT:
+        case 'LSHIFT':
             return leftVal << rightVal;
 
-        case BinOp.RSHIFT:
+        case 'RSHIFT':
             return leftVal >>> rightVal;
 
-        case BinOp.ARSHIFT:
+        case 'ARSHIFT':
             return leftVal >> rightVal;
 
-        case BinOp.XOR:
+        case 'XOR':
             return leftVal ^ rightVal;
 
-        case BinOp.EQ:
+        case 'EQ':
             return Number(leftVal === rightVal);
 
-        case BinOp.NE:
+        case 'NE':
             return Number(leftVal !== rightVal);
 
-        case BinOp.LT:
+        case 'LT':
             return Number(leftVal < rightVal);
 
-        case BinOp.GT:
+        case 'GT':
             return Number(leftVal > rightVal);
 
-        case BinOp.LE:
+        case 'LE':
             return Number(leftVal <= rightVal);
 
-        case BinOp.GE:
+        case 'GE':
             return Number(leftVal >= rightVal);
 
-        case BinOp.ULT:
+        case 'ULT':
             // Not sure, our parser doesn't even generate this
             return Number(leftVal < rightVal);
 
-        case BinOp.ULE:
+        case 'ULE':
             // Not sure, our parser doesn't even generate this
             return Number(leftVal <= rightVal);
 
-        case BinOp.UGT:
+        case 'UGT':
             // Not sure, our parser doesn't even generate this
             return Number(leftVal > rightVal);
 
-        case BinOp.UGE:
+        case 'UGE':
             // Not sure, our parser doesn't even generate this
             return Number(leftVal >= rightVal);
 
