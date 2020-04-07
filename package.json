@@ -17,5 +17,9 @@
         "jest": "^25.1.0",
         "ts-jest": "^25.2.1",
         "typescript": "^3.7.5"
+    },
+    "dependencies": {
+        "acorn": "^7.1.1",
+        "minimist": "^1.2.5"
     }
 }
