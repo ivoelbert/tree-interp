@@ -14,26 +14,27 @@ export const returnVariableTestInput: Frag[] = [
     {
         Proc: {
             body: [
-                { LABEL: 'd9958e4d-8075-4938-9bd3-fcaa949d24c9' },
+                { LABEL: '-blockfirst_f2b3fd6d-36c5-47ba-8722-0e502fb350f9' },
+                {
+                    MOVE: [
+                        { MEM: { BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }] } },
+                        { LOCAL: 'sl' },
+                    ],
+                },
                 { MOVE: [{ LOCAL: 'N' }, { CONST: 42 }] },
-                { EXP: { CONST: 0 } },
                 { MOVE: [{ GLOBAL: 'rv' }, { LOCAL: 'N' }] },
                 {
                     JUMP: [
-                        { NAME: 'dda2e2ea-aebc-4b4a-8933-4336b1e49bce' },
-                        ['dda2e2ea-aebc-4b4a-8933-4336b1e49bce'],
+                        { NAME: '-done_50af5d36-89b6-468e-9681-3ec6aa31313e' },
+                        ['-done_50af5d36-89b6-468e-9681-3ec6aa31313e'],
                     ],
                 },
-                { LABEL: 'dda2e2ea-aebc-4b4a-8933-4336b1e49bce' },
+                { LABEL: '-done_50af5d36-89b6-468e-9681-3ec6aa31313e' },
             ],
             frame: {
-                name: '_tigermain',
-                label: '29d361eb-8bca-4695-a6c0-edab959f8e28',
-                formals: [],
-                locals: ['N'],
-                arg_index: 0,
-                local_index: 0,
-                mem_index: 0,
+                label: '_tigermain_8d9c1f88-5777-443a-8121-bea13609a166',
+                formals: [['sl', true]],
+                memindex: 0,
             },
         },
     },

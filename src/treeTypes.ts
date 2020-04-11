@@ -8,7 +8,7 @@ export type LocalExp = { LOCAL: LocalTemp };
 export type GlobalExp = { GLOBAL: GlobalTemp };
 export type BinopExp = { BINOP: [BinOp, Exp, Exp] };
 export type MemExp = { MEM: Exp };
-export type CallExp = { CALL: [string, Exp, Exp[]] };
+export type CallExp = { CALL: [Exp, Exp[]] };
 export type EseqExp = { ESEQ: [Stm, Exp] };
 
 export type Exp = ConstExp | NameExp | LocalExp | GlobalExp | BinopExp | MemExp | CallExp | EseqExp;
@@ -45,13 +45,9 @@ export type LabelStm = { LABEL: Label };
 export type Stm = ExpStm | MoveStm | JumpStm | CjumpStm | SeqStm | LabelStm;
 
 export type Frame = {
-    name: string;
     label: Label;
     formals: [string, boolean][];
-    locals: string[];
-    arg_index: number;
-    local_index: number;
-    mem_index: number;
+    memindex: number;
 };
 
 export type FunFrag = {
@@ -66,8 +62,6 @@ export type StringFrag = {
 };
 
 export type Frag = FunFrag | StringFrag;
-
-export type CanonizedFragments = Frag[];
 
 /*
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

@@ -23,3 +23,40 @@ export const assertExists = <T>(value: T | undefined): T => {
         return value;
     }
 };
+
+interface IncludeMapEntry<K, V> {
+    key: K;
+    value: V;
+}
+
+export class IncludeMap<V> {
+    entries: IncludeMapEntry<string, V>[];
+
+    constructor() {
+        this.entries = [];
+    }
+
+    set = (key: string, value: V): IncludeMap<V> => {
+        const foundIndex = this.entries.findIndex((entry) => {
+            entry.key.includes(key);
+        });
+
+        if (foundIndex >= 0) {
+            this.entries[foundIndex] = { key, value };
+        } else {
+            this.entries.push({ key, value });
+        }
+
+        return this;
+    };
+
+    get = (key: string): V | undefined => {
+        const maybeEntry = this.entries.find((entry): boolean => entry.key.includes(key));
+
+        if (maybeEntry === undefined) {
+            return undefined;
+        } else {
+            return maybeEntry.value;
+        }
+    };
+}

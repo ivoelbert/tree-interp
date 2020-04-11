@@ -15,106 +15,134 @@ export const callFactorialInput: Frag[] = [
     {
         Proc: {
             body: [
-                { LABEL: '81381766-8cd1-4358-8d2d-1c708359edec' },
-                { LABEL: 'f868be12-3ffa-4406-8baa-e51ec853ba9d' },
+                { LABEL: '-blockfirst_491299f5-f80a-4e15-ac5e-a35ef73803da' },
                 {
                     MOVE: [
-                        { LOCAL: 'f6d26505-e635-47a7-a990-6a75781f725d' },
-                        {
-                            BINOP: [
-                                'MUL',
-                                { LOCAL: 'n' },
-                                {
-                                    CALL: [
-                                        'fact',
-                                        { NAME: '995f48f3-3993-4b63-b181-551faec87d51' },
-                                        [{ BINOP: ['MINUS', { LOCAL: 'n' }, { CONST: 1 }] }],
-                                    ],
-                                },
-                            ],
-                        },
+                        { MEM: { BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }] } },
+                        { LOCAL: 'sl' },
                     ],
                 },
-                { LABEL: '30771cf5-818f-43c7-8bea-067779a62ec3' },
-                {
-                    JUMP: [
-                        { NAME: 'f868be12-3ffa-4406-8baa-e51ec853ba9d' },
-                        ['f868be12-3ffa-4406-8baa-e51ec853ba9d'],
-                    ],
-                },
-                { LABEL: '16ac764a-1563-4547-9dc5-37d4203b451c' },
-                { MOVE: [{ LOCAL: 'f6d26505-e635-47a7-a990-6a75781f725d' }, { CONST: 1 }] },
-                { LABEL: 'eeabe23a-f6ee-476b-8b98-0ff91cc99561' },
                 {
                     CJUMP: [
                         'GE',
                         { BINOP: ['EQ', { LOCAL: 'n' }, { CONST: 0 }] },
                         { CONST: 1 },
-                        'eeabe23a-f6ee-476b-8b98-0ff91cc99561',
-                        '2b6ed0cf-f9a6-48cd-b83a-a7f11b934ff1',
+                        '-then_1f008d4a-78f3-40a1-80d5-1500edffb16f',
+                        '-else_be973ae8-71a1-493d-8fff-87e2e0ff500e',
                     ],
                 },
-                { LABEL: '2b6ed0cf-f9a6-48cd-b83a-a7f11b934ff1' },
+                { LABEL: '-else_be973ae8-71a1-493d-8fff-87e2e0ff500e' },
+                {
+                    MOVE: [
+                        { LOCAL: '-reorder_ec2b6383-0fc7-4b98-bfdd-3a4b55f6c473' },
+                        { LOCAL: 'n' },
+                    ],
+                },
+                {
+                    MOVE: [
+                        { LOCAL: '-reorder_call_bce687d2-c5e3-4ef1-83e5-2ff86e610023' },
+                        {
+                            CALL: [
+                                { NAME: 'fact_e0215f2a-d676-4c4d-b9cc-c066949a0517' },
+                                [
+                                    { GLOBAL: 'fp' },
+                                    { BINOP: ['MINUS', { LOCAL: 'n' }, { CONST: 1 }] },
+                                ],
+                            ],
+                        },
+                    ],
+                },
+                {
+                    MOVE: [
+                        { LOCAL: '-ifresult_d24eadd1-d722-4b89-ab57-1457893c9573' },
+                        {
+                            BINOP: [
+                                'MUL',
+                                { LOCAL: '-reorder_ec2b6383-0fc7-4b98-bfdd-3a4b55f6c473' },
+                                { LOCAL: '-reorder_call_bce687d2-c5e3-4ef1-83e5-2ff86e610023' },
+                            ],
+                        },
+                    ],
+                },
+                { LABEL: '-join_6f5194a4-5e12-466d-8b25-49cf3b023e31' },
+                {
+                    MOVE: [
+                        { GLOBAL: 'rv' },
+                        { LOCAL: '-ifresult_d24eadd1-d722-4b89-ab57-1457893c9573' },
+                    ],
+                },
                 {
                     JUMP: [
-                        { NAME: '30771cf5-818f-43c7-8bea-067779a62ec3' },
-                        ['30771cf5-818f-43c7-8bea-067779a62ec3'],
+                        { NAME: '-done_ed4c4ca5-2324-4738-93b9-036277d514e9' },
+                        ['-done_ed4c4ca5-2324-4738-93b9-036277d514e9'],
                     ],
                 },
-                { LABEL: '51da0b72-4aa6-4d3e-97b1-a2ac246384af' },
-                { EXP: { CONST: 0 } },
-                { MOVE: [{ GLOBAL: 'rv' }, { LOCAL: 'f6d26505-e635-47a7-a990-6a75781f725d' }] },
+                { LABEL: '-newblock-cjump_a882dac7-c198-4d7f-9b56-22ea25151dbd' },
+                { LABEL: '-then_1f008d4a-78f3-40a1-80d5-1500edffb16f' },
+                {
+                    MOVE: [
+                        { LOCAL: '-ifresult_d24eadd1-d722-4b89-ab57-1457893c9573' },
+                        { CONST: 1 },
+                    ],
+                },
                 {
                     JUMP: [
-                        { NAME: 'c1669c7e-afb1-434c-969e-ac24fac735e5' },
-                        ['c1669c7e-afb1-434c-969e-ac24fac735e5'],
+                        { NAME: '-join_6f5194a4-5e12-466d-8b25-49cf3b023e31' },
+                        ['-join_6f5194a4-5e12-466d-8b25-49cf3b023e31'],
                     ],
                 },
-                { LABEL: 'c1669c7e-afb1-434c-969e-ac24fac735e5' },
+                { LABEL: '-newblock-jump_bfb1377b-24e6-45b6-85ec-b8c580abd9b5' },
+                {
+                    JUMP: [
+                        { NAME: '-else_be973ae8-71a1-493d-8fff-87e2e0ff500e' },
+                        ['-else_be973ae8-71a1-493d-8fff-87e2e0ff500e'],
+                    ],
+                },
+                { LABEL: '-done_ed4c4ca5-2324-4738-93b9-036277d514e9' },
             ],
             frame: {
-                name: 'fact',
-                label: '995f48f3-3993-4b63-b181-551faec87d51',
-                formals: [['n', false]],
-                locals: [],
-                arg_index: 0,
-                local_index: 0,
-                mem_index: 0,
+                label: 'fact_e0215f2a-d676-4c4d-b9cc-c066949a0517',
+                formals: [
+                    ['sl', true],
+                    ['n', false],
+                ],
+                memindex: 0,
             },
         },
     },
     {
         Proc: {
             body: [
-                { LABEL: '2bde3ab2-e385-4d18-83f4-bd0023bdf25c' },
+                { LABEL: '-blockfirst_01af7bb5-134e-4479-9271-d11cac600b59' },
+                {
+                    MOVE: [
+                        { MEM: { BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }] } },
+                        { LOCAL: 'sl' },
+                    ],
+                },
                 {
                     MOVE: [
                         { GLOBAL: 'rv' },
                         {
                             CALL: [
-                                'fact',
-                                { NAME: '995f48f3-3993-4b63-b181-551faec87d51' },
-                                [{ CONST: 5 }],
+                                { NAME: 'fact_e0215f2a-d676-4c4d-b9cc-c066949a0517' },
+                                [{ GLOBAL: 'fp' }, { CONST: 5 }],
                             ],
                         },
                     ],
                 },
                 {
                     JUMP: [
-                        { NAME: '9212f2c0-0ce4-4365-9a94-02958830927e' },
-                        ['9212f2c0-0ce4-4365-9a94-02958830927e'],
+                        { NAME: '-done_0ab52c2b-8595-482f-9071-29f1ee5ce4e3' },
+                        ['-done_0ab52c2b-8595-482f-9071-29f1ee5ce4e3'],
                     ],
                 },
-                { LABEL: '9212f2c0-0ce4-4365-9a94-02958830927e' },
+                { LABEL: '-done_0ab52c2b-8595-482f-9071-29f1ee5ce4e3' },
             ],
             frame: {
-                name: '_tigermain',
-                label: '694c13cf-a13d-480d-b8b1-6b4d2729bc02',
-                formals: [],
-                locals: [],
-                arg_index: 0,
-                local_index: 0,
-                mem_index: 0,
+                label: '_tigermain_53253d6c-0d09-49ed-a718-fa5f61c2b415',
+                formals: [['sl', true]],
+                memindex: 0,
             },
         },
     },

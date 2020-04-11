@@ -10,24 +10,26 @@ export const returnNumberTestInput: Frag[] = [
     {
         Proc: {
             body: [
-                { LABEL: 'bc704a77-3b4a-4e10-a602-aeb24a65b176' },
+                { LABEL: '-blockfirst_985a300d-9426-4b83-93cb-f2e17411265c' },
+                {
+                    MOVE: [
+                        { MEM: { BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }] } },
+                        { LOCAL: 'sl' },
+                    ],
+                },
                 { MOVE: [{ GLOBAL: 'rv' }, { CONST: 42 }] },
                 {
                     JUMP: [
-                        { NAME: 'fb1fd49d-481e-43cd-a1cb-ab147cbbc807' },
-                        ['fb1fd49d-481e-43cd-a1cb-ab147cbbc807'],
+                        { NAME: '-done_f4c68b19-2096-4725-a6d9-5832a706c3e6' },
+                        ['-done_f4c68b19-2096-4725-a6d9-5832a706c3e6'],
                     ],
                 },
-                { LABEL: 'fb1fd49d-481e-43cd-a1cb-ab147cbbc807' },
+                { LABEL: '-done_f4c68b19-2096-4725-a6d9-5832a706c3e6' },
             ],
             frame: {
-                name: '_tigermain',
-                label: 'f7f48d4c-3128-4c87-a15c-23f9ebb83e78',
-                formals: [],
-                locals: [],
-                arg_index: 0,
-                local_index: 0,
-                mem_index: 0,
+                label: '_tigermain_e7b4e0fb-5bef-4bd6-b10a-85fd1d3537f5',
+                formals: [['sl', true]],
+                memindex: 0,
             },
         },
     },

@@ -4,37 +4,38 @@ import { Frag } from '../../treeTypes';
 PROGRAM:
 
 let
-  function id (n : int) : int = n
+	var a :=0
+	function g (a : int) : int = a
 in
-  id (42)
+	g (2)
 end
 */
 
-export const callIdentityInput: Frag[] = [
+export const localHideGlobalInput: Frag[] = [
     {
         Proc: {
             body: [
-                { LABEL: '-blockfirst_a37e30b7-ca8c-4fa4-a644-301310eba68a' },
+                { LABEL: '-blockfirst_b54107b2-7faf-4638-87d5-98509874d8c4' },
                 {
                     MOVE: [
                         { MEM: { BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }] } },
                         { LOCAL: 'sl' },
                     ],
                 },
-                { MOVE: [{ GLOBAL: 'rv' }, { LOCAL: 'n' }] },
+                { MOVE: [{ GLOBAL: 'rv' }, { LOCAL: 'a' }] },
                 {
                     JUMP: [
-                        { NAME: '-done_30139732-2541-4020-9f0e-13967cc47937' },
-                        ['-done_30139732-2541-4020-9f0e-13967cc47937'],
+                        { NAME: '-done_94de2092-48c1-4f77-8401-53ac448a4101' },
+                        ['-done_94de2092-48c1-4f77-8401-53ac448a4101'],
                     ],
                 },
-                { LABEL: '-done_30139732-2541-4020-9f0e-13967cc47937' },
+                { LABEL: '-done_94de2092-48c1-4f77-8401-53ac448a4101' },
             ],
             frame: {
-                label: 'id_3035fec1-5220-4e68-9dcc-b82b03d2fc89',
+                label: 'g_3f1ca239-5925-4574-a22d-817dd92861a4',
                 formals: [
                     ['sl', true],
-                    ['n', false],
+                    ['a', false],
                 ],
                 memindex: 0,
             },
@@ -43,34 +44,35 @@ export const callIdentityInput: Frag[] = [
     {
         Proc: {
             body: [
-                { LABEL: '-blockfirst_cea27962-6905-4153-9324-39242527e8c2' },
+                { LABEL: '-blockfirst_c6d22fc3-30f6-4db3-bf01-c319a7235c4d' },
                 {
                     MOVE: [
                         { MEM: { BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }] } },
                         { LOCAL: 'sl' },
                     ],
                 },
+                { MOVE: [{ LOCAL: 'a' }, { CONST: 0 }] },
                 {
                     MOVE: [
                         { GLOBAL: 'rv' },
                         {
                             CALL: [
-                                { NAME: 'id_3035fec1-5220-4e68-9dcc-b82b03d2fc89' },
-                                [{ GLOBAL: 'fp' }, { CONST: 42 }],
+                                { NAME: 'g_3f1ca239-5925-4574-a22d-817dd92861a4' },
+                                [{ GLOBAL: 'fp' }, { CONST: 2 }],
                             ],
                         },
                     ],
                 },
                 {
                     JUMP: [
-                        { NAME: '-done_59a2d1bb-4377-4a57-83cb-1f0318e114c6' },
-                        ['-done_59a2d1bb-4377-4a57-83cb-1f0318e114c6'],
+                        { NAME: '-done_c123fcb9-1d3a-4b7a-a67d-6e6115812feb' },
+                        ['-done_c123fcb9-1d3a-4b7a-a67d-6e6115812feb'],
                     ],
                 },
-                { LABEL: '-done_59a2d1bb-4377-4a57-83cb-1f0318e114c6' },
+                { LABEL: '-done_c123fcb9-1d3a-4b7a-a67d-6e6115812feb' },
             ],
             frame: {
-                label: '_tigermain_84321dec-1ba4-43dd-a0d7-0b21face5ed8',
+                label: '_tigermain_7995a6ca-f463-4eee-b464-ac4f82016129',
                 formals: [['sl', true]],
                 memindex: 0,
             },

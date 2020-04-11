@@ -1,5 +1,5 @@
 import { Exp, Frag, FunFrag, Stm, Label, GlobalTemp, LocalTemp } from './treeTypes';
-import { assertExists, UnreachableError } from './utils/utils';
+import { assertExists, UnreachableError, IncludeMap } from './utils/utils';
 import { accessExpsFromFormals } from './frame';
 import { findLabelIndex, evalBinop } from './utils/treeUtils';
 import { isFunFrag, isStringFrag } from './utils/fragPatterns';
@@ -26,6 +26,8 @@ import { StringStorage } from './utils/stringStorage';
 import { CustomConsole } from './utils/console';
 import { Runtime } from './runtime';
 
+const FRAME_POINTER_OFFSET = 1024 * 1024;
+
 export class TreeInterpreter {
     // Map Locals to values, this keeps track of the *current* locals map (per function)
     private locals: Map<LocalTemp, number>;
@@ -43,34 +45,34 @@ export class TreeInterpreter {
     private stringStorage: StringStorage;
 
     // Fragments corresponding to functions.
-    private functions: Map<string, FunFrag>;
+    private functions: IncludeMap<FunFrag>;
 
     // Provides runtime functions
     private runtime: Runtime;
 
-    constructor(fragments: Frag[], private console: CustomConsole) {
+    constructor(fragments: Frag[], private customConsole: CustomConsole) {
         this.locals = new Map();
         this.globals = new Map();
         this.labels = new Map();
         this.mem = new MemMap();
         this.stringStorage = new StringStorage(this.mem, this.labels);
-        this.functions = new Map();
+        this.functions = new IncludeMap();
 
         fragments.filter(isFunFrag).forEach((frag) => {
-            this.functions.set(frag.Proc.frame.name, frag);
+            this.functions.set(frag.Proc.frame.label, frag);
         });
 
         fragments.filter(isStringFrag).forEach((frag) => {
             this.stringStorage.storeString(frag);
         });
 
-        this.runtime = new Runtime(this.mem, this.stringStorage, this.console);
+        this.runtime = new Runtime(this.mem, this.stringStorage, this.customConsole);
     }
 
     public run = async (): Promise<number> => {
         // A program starts by calling the function _tigermain
         const mainLabel = '_tigermain';
-        return await this.evalFunction(mainLabel, []);
+        return await this.evalFunction(mainLabel, [0]);
     };
 
     private evalFunction = async (name: string, args: number[]): Promise<number> => {
@@ -78,14 +80,27 @@ export class TreeInterpreter {
         const fragment = assertExists(this.functions.get(name));
         const { body, frame } = fragment.Proc;
 
+        // Store locals for the current function
+        const localsToRestore = this.locals;
+        this.locals = new Map();
+
+        // Move FP very far away from here
+        const prevFp = this.globals.get('fp') ?? 0;
+        this.globals.set('fp', prevFp + FRAME_POINTER_OFFSET);
+
         // Set up the formals so we can exec the body
         await this.setupFormals(args, frame.formals);
 
         // The machine state is ready to run the body, do it.
         await this.execStms(body);
 
+        // Restore locals
+        this.locals = localsToRestore;
+
         // Retreive the return value, default to 0
         const rv = this.globals.get('rv') ?? 0;
+
+        this.globals.set('fp', prevFp);
 
         return rv;
     };
@@ -160,7 +175,7 @@ export class TreeInterpreter {
                 const value: number = await this.evalExp(fromExp);
 
                 this.globals.set(toExp.GLOBAL, value);
-                return null
+                return null;
             }
 
             if (isMemExp(toExp)) {
@@ -171,7 +186,7 @@ export class TreeInterpreter {
                 return null;
             }
 
-            throw new UnreachableError(`MOVE to a non Temp nor Mem expression\n${toExp}\n`);
+            throw new UnreachableError(`MOVE to a non Local, Global or Mem expression\n${toExp}\n`);
         }
 
         if (isJumpStm(stm)) {
@@ -180,7 +195,7 @@ export class TreeInterpreter {
                 return where.NAME;
             }
 
-            throw new UnreachableError(`JUMP to a non-Label expression:\n${where}\n`);
+            throw new UnreachableError(`JUMP to a non Label expression:\n${where}\n`);
         }
 
         if (isCjumpStm(stm)) {
@@ -220,11 +235,12 @@ export class TreeInterpreter {
         }
 
         if (isLocalExp(exp)) {
+            // console.log(exp.LOCAL);
             return assertExists(this.locals.get(exp.LOCAL));
         }
 
         if (isGlobalExp(exp)) {
-            return assertExists(this.locals.get(exp.GLOBAL));
+            return assertExists(this.globals.get(exp.GLOBAL));
         }
 
         if (isBinopExp(exp)) {
@@ -238,24 +254,32 @@ export class TreeInterpreter {
 
         if (isMemExp(exp)) {
             const dir = await this.evalExp(exp.MEM);
+            // console.log(JSON.stringify(exp.MEM));
+            // console.log(dir);
+            // console.log(this.mem.entries());
             return assertExists(this.mem.get(dir));
         }
 
         if (isCallExp(exp)) {
-            const [name, labelExp, args] = exp.CALL;
-            const evaluatedArgs = await Promise.all(args.map(this.evalExp));
+            const [labelExp, args] = exp.CALL;
+            if (isNameExp(labelExp)) {
+                const name = labelExp.NAME;
+                const evaluatedArgs = await Promise.all(args.map(this.evalExp));
 
-            let returnValue: number;
-            const runtimeFunction = this.runtime.maybeGetFunction(name);
-            if (runtimeFunction !== undefined) {
-                returnValue = await runtimeFunction(evaluatedArgs);
+                let returnValue: number;
+                const runtimeFunction = this.runtime.maybeGetFunction(name);
+                if (runtimeFunction !== undefined) {
+                    returnValue = await runtimeFunction(evaluatedArgs);
+                } else {
+                    returnValue = await this.evalFunction(name, evaluatedArgs);
+                }
+
+                this.globals.set('rv', returnValue);
+
+                return returnValue;
             } else {
-                returnValue = await this.evalFunction(name, evaluatedArgs);
+                throw new UnreachableError('Found CALL to non NAME exp');
             }
-
-            this.globals.set('rv', returnValue);
-
-            return returnValue;
         }
 
         if (isEseqExp(exp)) {
@@ -266,3 +290,23 @@ export class TreeInterpreter {
         throw new UnreachableError();
     };
 }
+
+const fafa = {
+    BINOP: [
+        'PLUS',
+        {
+            MEM: {
+                BINOP: [
+                    'PLUS',
+                    {
+                        MEM: {
+                            BINOP: ['PLUS', { GLOBAL: 'fp' }, { CONST: 0 }],
+                        },
+                    },
+                    { CONST: 0 },
+                ],
+            },
+        },
+        { CONST: 1 },
+    ],
+};

@@ -17,29 +17,29 @@ export const runtimeDependenciesFactory = (): RuntimeTestDependencies => {
     const memMap = new MemMap();
     const labels = new Map<Label, number>();
     const stringStorage = new StringStorage(memMap, labels);
-    const console = new MockConsole();
-    const runtime = new Runtime(memMap, stringStorage, console);
+    const customConsole = new MockConsole();
+    const runtime = new Runtime(memMap, stringStorage, customConsole);
 
     return {
         memMap,
         labels,
         stringStorage,
-        customConsole: console,
+        customConsole,
         runtime,
     };
 };
 
 interface InterpreterTestDependencies {
     interpreter: TreeInterpreter;
-    console: MockConsole;
+    customConsole: MockConsole;
 }
 
 export const interpreterDependenciesFactory = (input: Frag[]): InterpreterTestDependencies => {
-    const console = new MockConsole();
-    const interpreter = new TreeInterpreter(input, console);
+    const customConsole = new MockConsole();
+    const interpreter = new TreeInterpreter(input, customConsole);
 
     return {
         interpreter,
-        console,
+        customConsole,
     };
 };
